@@ -3,9 +3,13 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { CMTextField } from "../GlobalComponents/CMTextField";
-import { HEADER_CONFIG } from "../GlobalFunctions/API_header_config";
+import { getHeaderConfig } from "../GlobalFunctions/API_header_config";
+import { useSelector } from "react-redux";
+import { selectIsAuthenticated, selectUser } from "../../redux/userSlice";
 import { API_URLS } from "../GlobalFunctions/APIs";
 import { ROUTE_PATH } from "../GlobalFunctions/routePath";
+import { useDispatch } from "react-redux";
+import { loginUser } from "../../redux/userSlice";
 
 const LoginModel = ({}) => {
   const [userName, setUserName] = useState("");
@@ -13,6 +17,10 @@ const LoginModel = ({}) => {
   const [helperText, setHelperText] = useState({ username: "", password: "" });
   const [errorMessage, setErrorMessage] = useState("");
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const user = useSelector(selectUser);
+  const isAuthenticated = useSelector(selectIsAuthenticated);
+  const HEADER_CONFIG = getHeaderConfig(user);
 
   const onInputChange = (value, setDetails) => {
     setErrorMessage("");
@@ -40,8 +48,8 @@ const LoginModel = ({}) => {
       .then((response) => {
         let resp = response.data;
         if (resp.success) {
-          navigate(ROUTE_PATH.ENROLL_CHILD);
-          console.log(resp.user);
+          dispatch(loginUser(resp.user));
+          navigate(ROUTE_PATH.DASHBOARD);
         } else {
           setErrorMessage(resp.message);
         }
@@ -124,6 +132,7 @@ const LoginModel = ({}) => {
           variant="outlined"
           fullWidth={true}
           sx={{ borderRadius: 20, mt: "20px" }}
+          onClick={() => navigate(ROUTE_PATH.CREATE_ACCOUNT)}
         >
           Create Account
         </Button>

@@ -9,7 +9,7 @@ import ListItem from "@mui/material/ListItem";
 import ListItemButton from "@mui/material/ListItemButton";
 import ListItemIcon from "@mui/material/ListItemIcon";
 import ListItemText from "@mui/material/ListItemText";
-import { Grid } from "@mui/material";
+import { Collapse, Grid } from "@mui/material";
 import PersonAddIcon from "@mui/icons-material/PersonAdd";
 import ManageAccountsIcon from "@mui/icons-material/ManageAccounts";
 import SchoolIcon from "@mui/icons-material/School";
@@ -22,19 +22,65 @@ import { EnrollChild } from "../EnrollChild/EnrollChild";
 import { ROUTE_PATH } from "../GlobalFunctions/routePath";
 import { ManageStaff } from "../ManageStaff/ManageStaff";
 import { ManageClassroom } from "../Manageclassroom/ManageClassroom";
+import { AccountingLedger } from "../AccountingLedger/AccountingLedger";
+import { API_URLS } from "../GlobalFunctions/APIs";
+import { getHeaderConfig } from "../GlobalFunctions/API_header_config";
+import axios from "axios";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  logoutUser,
+  selectIsAuthenticated,
+  selectUser,
+} from "../../redux/userSlice";
+import { StaffAttendance } from "../Attendance/StaffAttendance";
+import { PersonalInformation } from "../PersonalInformation/PersonalInformation";
+import { StudentAttendance } from "../StudentAttendance/StudentAttendance";
+import { Report } from "../Report/Report";
+import AccordionSummary from "@mui/material/AccordionSummary";
+import AccordionDetails from "@mui/material/AccordionDetails";
+import { LedgerReport } from "../Report/LedgerReport";
+import { ParentPI } from "../PersonalInformation/ParentPI";
 
 const drawerWidth = 240;
 
 export const DraweComponent = () => {
-  const [selectedItem, setSelectedItem] = useState("Enroll Child");
-
+  const user = useSelector(selectUser);
+  const isAuthenticated = useSelector(selectIsAuthenticated);
+  const dispatch = useDispatch();
+  const HEADER_CONFIG = getHeaderConfig(user);
   const location = useLocation();
   const navigate = useNavigate();
+  const isAdmin = user.roles && user.roles.includes("Admin");
+  const isTeacher = user.roles && user.roles.includes("Teacher");
+  const isParent = user.roles && user.roles.includes("Parent");
+  const [selectedItem, setSelectedItem] = useState(
+    isAdmin
+      ? "Enroll Child"
+      : isTeacher
+      ? "Student Attendance"
+      : "Presonal Information"
+  );
+  const [checked, setChecked] = useState(false);
+  const [selectedSubmenu, setSelectedSubmenu] = useState("");
 
-  console.log(location);
+  const singOut = () => {
+    if (user.roles && user.roles.includes("Teacher")) {
+      axios.post(API_URLS.SIGN_OUT, user, HEADER_CONFIG).then(({ data }) => {
+        navigate(ROUTE_PATH.HOME_PAGE);
+        dispatch(logoutUser());
+      });
+    } else {
+      navigate(ROUTE_PATH.HOME_PAGE);
+    }
+  };
 
   useEffect(() => {
-    drawerList.map((item, index) => {
+    (isAdmin
+      ? drawerList
+      : isTeacher
+      ? teacherDrawerList
+      : parentDrawerList
+    ).map((item, index) => {
       if (location.pathname == item.pathname) {
         setSelectedItem(item.text);
       }
@@ -63,25 +109,69 @@ export const DraweComponent = () => {
     {
       text: "Attendance",
       Icon: EventNoteIcon,
-      Component: EnrollChild,
+      Component: StaffAttendance,
       pathname: ROUTE_PATH.ATTENDANCE,
     },
     {
       text: "Accounting Ledger",
       Icon: AccountBalanceIcon,
-      Component: EnrollChild,
+      Component: AccountingLedger,
       pathname: ROUTE_PATH.ACCOUNTING_LEDGER,
     },
     {
       text: "Reports",
       Icon: LeaderboardIcon,
-      Component: EnrollChild,
+      Component: Report,
       pathname: ROUTE_PATH.REPORTS,
+      submenu: [
+        {
+          text: "Attendance",
+        },
+        {
+          text: "Ledger Report",
+        },
+      ],
+    },
+  ];
+
+  const teacherDrawerList = [
+    {
+      text: "Student Attendance",
+      Icon: EventNoteIcon,
+      Component: StudentAttendance,
+      pathname: ROUTE_PATH.ACCOUNTING_LEDGER,
     },
     {
-      text: "Signout",
-      Icon: ExitToAppIcon,
-      Component: EnrollChild,
+      text: "Attendance & Accounting",
+      Icon: AccountBalanceIcon,
+      Component: StaffAttendance,
+      pathname: ROUTE_PATH.ATTENDANCE_ACCOUNTING,
+    },
+    {
+      text: "Personal Information",
+      Icon: ManageAccountsIcon,
+      Component: PersonalInformation,
+      pathname: ROUTE_PATH.PERSONAL_INFORMATION,
+    },
+  ];
+  const parentDrawerList = [
+    {
+      text: "Presonal Information",
+      Icon: ManageAccountsIcon,
+      Component: ParentPI,
+      pathname: ROUTE_PATH.PERSONAL_INFORMATION,
+    },
+    {
+      text: "Child Attendance",
+      Icon: EventNoteIcon,
+      Component: StaffAttendance,
+      pathname: ROUTE_PATH.CHILD_ATTENDANCE,
+    },
+    {
+      text: "Accounting and Ledger",
+      Icon: AccountBalanceIcon,
+      Component: AccountingLedger,
+      pathname: ROUTE_PATH.ACCOUNTING_LEDGER,
     },
   ];
 
@@ -126,15 +216,28 @@ export const DraweComponent = () => {
         <Grid sx={{ height: 55 }} />
         <Divider />
         <List>
-          {drawerList.map(({ text, Icon, pathname }, index) => (
-            <>
+          {(isAdmin
+            ? drawerList
+            : isTeacher
+            ? teacherDrawerList
+            : parentDrawerList
+          ).map(({ text, Icon, pathname, submenu = [] }, index) => (
+            <Grid sx={{ display: "flex", flexFlow: "column" }}>
               <ListItem
                 key={text}
                 disablePadding
                 onClick={() => {
-                  // window.history.replaceState(null, "", pathname);
                   navigate(pathname);
                   setSelectedItem(text);
+                  setChecked(false);
+
+                  setSelectedSubmenu("");
+                  if (text == "Reports") {
+                    if (!selectedSubmenu) {
+                      setSelectedSubmenu("Attendance");
+                    }
+                    setChecked(!checked);
+                  }
                 }}
                 sx={[
                   selectedItem == text && { backgroundColor: "#accef4" },
@@ -160,9 +263,47 @@ export const DraweComponent = () => {
                   />
                 </ListItemButton>
               </ListItem>
-              {index == 3 && <Divider />}
-            </>
+              {submenu.length ? (
+                <Collapse in={checked}>
+                  {submenu.map((item, index) => (
+                    <ListItem disablePadding>
+                      <ListItemButton
+                        onClick={() => setSelectedSubmenu(item.text)}
+                      >
+                        <ListItemText
+                          primary={item.text}
+                          sx={
+                            selectedSubmenu == item.text && {
+                              "& .MuiTypography-root": {
+                                fontWeight: "bold !important",
+                                color: "#07255d",
+                              },
+                            }
+                          }
+                          style={{ paddingLeft: "40px" }}
+                        />
+                      </ListItemButton>
+                    </ListItem>
+                  ))}
+                </Collapse>
+              ) : (
+                <></>
+              )}
+              {index == 3 && <Divider sx={{ my: "5px" }} />}
+            </Grid>
           ))}
+          <ListItem
+            disablePadding
+            onClick={singOut}
+            sx={[{ borderRadius: "30px", overflow: "hidden" }]}
+          >
+            <ListItemButton>
+              <ListItemIcon>
+                <ExitToAppIcon />
+              </ListItemIcon>
+              <ListItemText primary={"Sign Out"} />
+            </ListItemButton>
+          </ListItem>
         </List>
       </Drawer>
       <Grid
@@ -170,8 +311,23 @@ export const DraweComponent = () => {
         sx={{ flexGrow: 1, bgcolor: "background.default", p: 3 }}
       >
         <Grid sx={{ height: 55 }} />
-        {drawerList.map(({ Component, text }) => {
-          return selectedItem == text && <Component />;
+        {(isAdmin
+          ? drawerList
+          : isTeacher
+          ? teacherDrawerList
+          : parentDrawerList
+        ).map(({ Component, text }, index) => {
+          return index == 5 ? (
+            selectedSubmenu == "Attendance" ? (
+              <Report />
+            ) : selectedSubmenu == "Ledger Report" ? (
+              <LedgerReport />
+            ) : (
+              <></>
+            )
+          ) : (
+            selectedItem == text && <Component />
+          );
         })}
       </Grid>
     </Grid>

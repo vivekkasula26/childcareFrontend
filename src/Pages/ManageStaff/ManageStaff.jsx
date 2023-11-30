@@ -4,6 +4,8 @@ import {
   ClickAwayListener,
   Dialog,
   Grid,
+  MenuItem,
+  Select,
   Table,
   TableBody,
   TableCell,
@@ -15,9 +17,12 @@ import {
 import { Form, Field } from "react-final-form";
 import { CMTextField } from "../GlobalComponents/CMTextField";
 import { API_URLS } from "../GlobalFunctions/APIs";
-import { HEADER_CONFIG } from "../GlobalFunctions/API_header_config";
+import { getHeaderConfig } from "../GlobalFunctions/API_header_config";
+import { useSelector } from "react-redux";
+import { selectIsAuthenticated, selectUser } from "../../redux/userSlice";
 import axios from "axios";
 import { CMDatePicker, formatPhoneNumber } from "../EnrollChild/EnrollChild";
+import { validateEmail } from "../Homepage/CreateAccount";
 
 export const ManageStaff = () => {
   const [hiredStaff, setHiredStaff] = useState([]);
@@ -27,6 +32,13 @@ export const ManageStaff = () => {
   const [isWithdrawalOpen, setIsWithdrawalOpen] = useState(false);
   const [isClikedSearch, setIsClikedSearch] = useState(false);
   const [staffID, setStaffID] = useState("");
+  const [isManageStaff, setIsManageStaff] = useState(false);
+  const [editedAssigned, setEditedAssigned] = useState([]);
+  const [availableSpots, setAvailableSpots] = useState({});
+  const [refresh, setRefresh] = useState(0);
+  const user = useSelector(selectUser);
+  const isAuthenticated = useSelector(selectIsAuthenticated);
+  const HEADER_CONFIG = getHeaderConfig(user);
 
   const styles = {
     heading: {
@@ -46,14 +58,18 @@ export const ManageStaff = () => {
   };
 
   useEffect(() => {
+    getData();
+    getAvailableSpots();
+  }, [refresh]);
+
+  const getData = () => {
     axios.get(API_URLS.GET_HIRED_STAFF, HEADER_CONFIG).then((response) => {
       let data = response.data;
       setHiredStaff(data);
     });
-  }, []);
+  };
 
   const onSubmit = (values) => {
-    return;
     const payload = {
       FirstName: values.FirstName,
       LastName: values.LastName,
@@ -61,6 +77,8 @@ export const ManageStaff = () => {
       HourlySalary: values.HourlySalary,
       PhoneNumber: values.PhoneNumber,
       Address: values.Address,
+      email: values.email,
+      assigned: editedAssigned,
     };
 
     axios.post(API_URLS.HIRE_STAFF, payload, HEADER_CONFIG).then(({ data }) => {
@@ -97,30 +115,92 @@ export const ManageStaff = () => {
     if (!values.HourlySalary) {
       errors.HourlySalary = "Required";
     }
-
+    if (!values.email) {
+      errors.email = "Required";
+    } else if (!validateEmail(values.email)) {
+      errors.email = "Invalid email address";
+    }
     setErrors(errors);
-    // return errors;
   };
 
   const withdrawStaff = () => {
     let payload = {
       ID: staffID,
     };
+    axios.post(API_URLS.WITHDRAW_STAFF, payload, HEADER_CONFIG).then((res) => {
+      let data = res.data;
+      setIsWithdrawalOpen(false);
+      setRefresh(refresh + 1);
+      closeDialog();
+      window.alert(data.message);
+    });
+  };
+
+  const handleAgeGroupChange = (event) => {
+    let val = event.target.value;
+
+    if (availableSpots[val.slice(-1)[0]]) {
+      setEditedAssigned(val);
+    } else {
+      window.alert("can not assign");
+    }
+  };
+
+  const closeDialog = () => {
+    setIsManageStaff(false);
+    setIsWithdrawalOpen(false);
+    setIsClikedSearch(false);
+
+    setStaffID("");
+  };
+
+  const manageStaff = () => {
+    const payload = {
+      id: staffID,
+      assigned: editedAssigned,
+    };
+
     axios
-      .post(API_URLS.WITHDRAW_STAFF, payload, HEADER_CONFIG)
-      .then((res) => {
-        let data = res.data;
-        setIsWithdrawalOpen(false);
-        let updated_data = [];
-        hiredStaff.map((item, index) => {
-          if (item.ID != staffID) {
-            updated_data.push(item);
-          }
-        });
-        setHiredStaff(updated_data);
-        setIsClikedSearch(false);
-      })
-      .finally(() => window.alert(data.message));
+      .post(API_URLS.UPDATE_STAFF, payload, HEADER_CONFIG)
+      .then(({ data }) => {
+        closeDialog();
+        setStaffID("");
+        window.alert(data.message);
+        setRefresh(refresh + 1);
+        setEditedAssigned([]);
+      });
+  };
+
+  const getAvailableSpots = () => {
+    axios
+      .get(API_URLS.GET_AVALIABLE_CLASSROOM_SPOTS, HEADER_CONFIG)
+      .then(({ data }) => {
+        setAvailableSpots(data);
+      });
+  };
+
+  const ClassroomDropdown = ({ assigned = [] }) => {
+    return (
+      <Grid>
+        <Typography>Assigned Classroom: </Typography>
+        <Select
+          labelId="ageGroup-label"
+          id="ageGroup"
+          multiple
+          value={editedAssigned.length > 0 ? editedAssigned : assigned}
+          onChange={handleAgeGroupChange}
+          sx={{ width: "200px" }}
+          size="small"
+          variant="outlined"
+        >
+          <MenuItem value="Infant">Infant</MenuItem>
+          <MenuItem value="Toddler">Toddler</MenuItem>
+          <MenuItem value="Twaddler">Twaddler</MenuItem>
+          <MenuItem value="3 Years Old">3 Years Old</MenuItem>
+          <MenuItem value="4 Years Old">4 Years Old</MenuItem>
+        </Select>
+      </Grid>
+    );
   };
 
   return (
@@ -129,7 +209,7 @@ export const ManageStaff = () => {
         <Typography
           style={{ fontSize: 28, fontWeight: "bold", fontFamily: "sans-serif" }}
         >
-          Manage Staff
+          Assign Staff
         </Typography>
       </Grid>
       <Button
@@ -146,7 +226,13 @@ export const ManageStaff = () => {
       >
         Withdraw Staff
       </Button>
-
+      <Button
+        variant="outlined"
+        style={{ marginTop: 20, marginBottom: 20, marginLeft: "15px" }}
+        onClick={() => setIsManageStaff(true)}
+      >
+        Assign Staff
+      </Button>
       <TableContainer style={{ border: "1px solid ", borderColor: "#e6e6e6" }}>
         <Table
           sx={{ minWidth: 650, backgroundColor: "#fafafd" }}
@@ -171,6 +257,7 @@ export const ManageStaff = () => {
               <TableCell align="center">PhoneNumber</TableCell>
               <TableCell align="center">HourlySalary</TableCell>
               <TableCell align="center">HireDate</TableCell>
+              <TableCell align="center">Assigned Classrooms</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -196,6 +283,7 @@ export const ManageStaff = () => {
                 <TableCell align="center">{row.PhoneNumber}</TableCell>
                 <TableCell align="center">{row.HourlySalary}</TableCell>
                 <TableCell align="center">{row.HireDate}</TableCell>
+                <TableCell align="center">{row.assigned.join(", ")}</TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -231,7 +319,7 @@ export const ManageStaff = () => {
                     )}
                   />
                   <Field
-                    name="lastName"
+                    name="LastName"
                     render={({ input }) => (
                       <CMTextField
                         {...input}
@@ -241,7 +329,6 @@ export const ManageStaff = () => {
                       />
                     )}
                   />
-
                   <Field
                     name="Address"
                     render={({ input }) => (
@@ -250,6 +337,18 @@ export const ManageStaff = () => {
                         label="Address"
                         error={errors.Address}
                         helperText={errors.Address}
+                      />
+                    )}
+                  />
+                  <Field
+                    name="email"
+                    render={({ input }) => (
+                      <CMTextField
+                        {...input}
+                        label="Email"
+                        error={errors.email}
+                        helperText={errors.email}
+                        sx={{ marginBottom: "15px" }}
                       />
                     )}
                   />
@@ -283,12 +382,14 @@ export const ManageStaff = () => {
                     name="dob"
                     render={({ input }) => (
                       <CMDatePicker
+                        {...input}
                         label={"Date of Birth"}
                         error={errors.dob}
                         helperText={errors.dob}
                       />
                     )}
                   />
+                  <ClassroomDropdown />
                 </div>
                 <Button
                   variant="contained"
@@ -305,12 +406,23 @@ export const ManageStaff = () => {
           />
         </Grid>
       </Dialog>
+
       <Dialog
-        open={isWithdrawalOpen}
-        onClose={() => setIsWithdrawalOpen(false)}
+        open={isManageStaff || isWithdrawalOpen}
+        onClose={() => {
+          setIsManageStaff(false);
+          setIsWithdrawalOpen(false);
+          setStaffID("");
+          setIsClikedSearch(false);
+          setEditedAssigned([]);
+        }}
+        fullWidth={true}
+        maxWidth={"sm"}
       >
         <Grid sx={{ padding: "15px" }}>
-          <Typography sx={styles.heading}>Withdraw Staff</Typography>
+          <Typography sx={styles.heading}>
+            {isManageStaff ? "Assign Staff" : "Withdraw Staff"}
+          </Typography>
           {isClikedSearch ? (
             <>
               {hiredStaff.map((item, index) => {
@@ -324,6 +436,13 @@ export const ManageStaff = () => {
                     <Typography>Hourly Salary : {item.HourlySalary}</Typography>
                     <Typography>PhoneNumber: {item.PhoneNumber}</Typography>
                     <Typography>Address: {item.Address}</Typography>
+                    {isManageStaff ? (
+                      <ClassroomDropdown assigned={item.assigned} />
+                    ) : (
+                      <Typography>
+                        Assigned Classroom: {item.assigned.join(",")}
+                      </Typography>
+                    )}
                   </Grid>
                 ) : (
                   <></>
@@ -332,8 +451,8 @@ export const ManageStaff = () => {
             </>
           ) : (
             <CMTextField
-              placeholder="Enter EnrollmentID"
-              label="Enter EnrollmentID"
+              placeholder="Enter ID"
+              label="Enter ID"
               onChange={(event) => setStaffID(event.target.value)}
             />
           )}
@@ -346,7 +465,11 @@ export const ManageStaff = () => {
             variant="contained"
             sx={{ mt: "20px" }}
             onClick={() =>
-              isClikedSearch ? withdrawStaff() : setIsClikedSearch(true)
+              isClikedSearch
+                ? isManageStaff
+                  ? manageStaff()
+                  : withdrawStaff()
+                : setIsClikedSearch(true)
             }
           >
             {isClikedSearch ? "Submit" : "Search"}

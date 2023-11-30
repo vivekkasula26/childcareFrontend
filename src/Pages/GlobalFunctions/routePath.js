@@ -12,4 +12,10 @@ export const ROUTE_PATH = {
   ATTENDANCE: "/dashboard/attendance",
   ACCOUNTING_LEDGER: "/dashboard/accounting_ledger",
   REPORTS: "/dashboard/reports",
+  REPORTS_ATTENDANCE: "/dashboard/reports/attendance",
+  REPORTS_LEDGER: "/dashboard/reports/ledger",
+  CREATE_ACCOUNT: "/create_account",
+  PERSONAL_INFORMATION: "/dashboard/personal_information",
+  ATTENDANCE_ACCOUNTING: "/dashboard/attendance_accounting",
+  CHILD_ATTENDANCE: "/dashboard/child_attendance",
 };

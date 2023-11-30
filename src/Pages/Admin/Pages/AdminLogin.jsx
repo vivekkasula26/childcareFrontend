@@ -3,9 +3,11 @@ import { Grid, Typography, Button, Paper, Container } from "@mui/material";
 import { CMTextField } from "../../GlobalComponents/CMTextField";
 import { API_URLS } from "../../GlobalFunctions/APIs";
 import axios from "axios";
-import { HEADER_CONFIG } from "../../GlobalFunctions/API_header_config";
 import { useNavigate } from "react-router-dom";
 import { ROUTE_PATH } from "../../GlobalFunctions/routePath";
+import { useSelector } from "react-redux";
+import { selectIsAuthenticated, selectUser } from "../../../redux/userSlice";
+import { getHeaderConfig } from "../../GlobalFunctions/API_header_config";
 
 export const AdminLogin = () => {
   const [userName, setUserName] = useState("");
@@ -16,6 +18,9 @@ export const AdminLogin = () => {
   });
   const [errorMessage, setErrorMessage] = useState("");
   const navigate = useNavigate();
+  const user = useSelector(selectUser);
+  const isAuthenticated = useSelector(selectIsAuthenticated);
+  const HEADER_CONFIG = getHeaderConfig(user);
 
   const onInputChange = (value, setDetails) => {
     setErrorMessage("");
