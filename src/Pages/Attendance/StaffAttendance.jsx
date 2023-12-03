@@ -25,9 +25,9 @@ export const StaffAttendance = () => {
   const isAuthenticated = useSelector(selectIsAuthenticated);
   const HEADER_CONFIG = getHeaderConfig(user);
   const [StaffAttendance, setStaffAttendance] = useState([]);
-  const isTeacher = user.roles && user.roles.includes("Teacher");
-  const isParent = user.roles && user.roles.includes("Parent");
-  const isAdmin = user.roles && user.roles.includes("Admin");
+  const isParent = user.role && user.role == "Parent";
+  const isTeacher = user.role && user.role == "Teacher";
+  const isAdmin = user.role && user.role == "Admin";
   const [selected, setSelected] = useState(isParent ? "child" : "Staff");
   const [childrenList, setChildrenList] = useState([]);
   const isStaff = selected == "Staff";
@@ -60,7 +60,6 @@ export const StaffAttendance = () => {
         HEADER_CONFIG
       )
       .then(({ data }) => {
-        debugger;
         setChildrenList(data.data);
         setSelected("Child");
       });
@@ -77,24 +76,12 @@ export const StaffAttendance = () => {
   return (
     <Grid>
       <Typography style={{ fontSize: 28, fontWeight: "bold" }}>
-        {isTeacher ? "Staff attendance and accounts" : "Staff attendance "}
+        {isTeacher
+          ? "Staff attendance and accounts"
+          : isAdmin
+          ? "Staff attendance "
+          : "Child attendance"}
       </Typography>
-
-      {isAdmin ? (
-        <ToggleButtonGroup
-          value={selected}
-          exclusive
-          onChange={handleSelection}
-          size="small"
-          color="primary"
-          variant="contained"
-        >
-          <ToggleButton value="Staff" color="primary">
-            Staff
-          </ToggleButton>
-          <ToggleButton value="Child">Child</ToggleButton>
-        </ToggleButtonGroup>
-      ) : null}
 
       <TableContainer
         style={{ border: "1px solid ", borderColor: "#e6e6e6", marginTop: 20 }}

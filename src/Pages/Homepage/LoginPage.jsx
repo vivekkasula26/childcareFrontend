@@ -1,5 +1,15 @@
-import { Button, Grid, Typography, Paper } from "@mui/material";
-import React, { useState } from "react";
+import {
+  Button,
+  Grid,
+  Typography,
+  Paper,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  FormHelperText,
+} from "@mui/material";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { CMTextField } from "../GlobalComponents/CMTextField";
@@ -14,13 +24,22 @@ import { loginUser } from "../../redux/userSlice";
 const LoginModel = ({}) => {
   const [userName, setUserName] = useState("");
   const [password, setPassword] = useState("");
-  const [helperText, setHelperText] = useState({ username: "", password: "" });
+  const [helperText, setHelperText] = useState({
+    username: "",
+    password: "",
+    userRole: "",
+  });
   const [errorMessage, setErrorMessage] = useState("");
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const user = useSelector(selectUser);
   const isAuthenticated = useSelector(selectIsAuthenticated);
   const HEADER_CONFIG = getHeaderConfig(user);
+  const [selectedUser, setSelectedUser] = useState("");
+
+  useEffect(() => {
+    dispatch(loginUser({}));
+  }, []);
 
   const onInputChange = (value, setDetails) => {
     setErrorMessage("");
@@ -29,10 +48,11 @@ const LoginModel = ({}) => {
   };
 
   const onClickLogin = () => {
-    if (!userName || !password) {
+    if (!userName || !password || !selectedUser) {
       setHelperText({
         username: userName ? "" : "Please enter username",
         password: password ? "" : "please enter password",
+        userRole: selectedUser ? "" : "Please select the user",
       });
 
       return;
@@ -41,6 +61,7 @@ const LoginModel = ({}) => {
     let payload = {
       userName: userName,
       password: password,
+      userRole: selectedUser,
     };
 
     return axios
@@ -49,7 +70,11 @@ const LoginModel = ({}) => {
         let resp = response.data;
         if (resp.success) {
           dispatch(loginUser(resp.user));
-          navigate(ROUTE_PATH.DASHBOARD);
+          if (resp.user.role == "System Admin") {
+            navigate(ROUTE_PATH.ADMIN_DASHBOARD);
+          } else {
+            navigate(ROUTE_PATH.DASHBOARD);
+          }
         } else {
           setErrorMessage(resp.message);
         }
@@ -93,17 +118,32 @@ const LoginModel = ({}) => {
             error={Boolean(helperText.password)}
             label="Password"
           />
-
-          <Typography
-            sx={{
-              mt: "10px",
-              fontSize: "12px",
-              textDecoration: "underline",
-              cursor: "pointer",
-            }}
+          <FormControl
+            variant="outlined"
+            size="small"
+            sx={{ width: "200px" }}
+            error={helperText.userRole}
           >
-            Forgot Password?
-          </Typography>
+            <InputLabel>User Type</InputLabel>
+            <Select
+              value={selectedUser}
+              onChange={(event) => setSelectedUser(event.target.value)}
+              sx={{ width: "200px" }}
+              size="small"
+              variant="outlined"
+              label={"User Type"}
+            >
+              <MenuItem value="System Admin">System Admin</MenuItem>
+              <MenuItem value="Admin">Facility Admin</MenuItem>
+              <MenuItem value="Teacher">Staff</MenuItem>
+              <MenuItem value="Parent">Parent</MenuItem>
+            </Select>
+            <FormHelperText>
+              {helperText.userRole
+                ? "Please select a user type"
+                : "Select the user type"}
+            </FormHelperText>
+          </FormControl>
           {errorMessage ? (
             <Typography style={{ fontSize: 12, color: "red" }}>
               {errorMessage}

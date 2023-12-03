@@ -40,6 +40,8 @@ import AccordionSummary from "@mui/material/AccordionSummary";
 import AccordionDetails from "@mui/material/AccordionDetails";
 import { LedgerReport } from "../Report/LedgerReport";
 import { ParentPI } from "../PersonalInformation/ParentPI";
+import PersonIcon from "@mui/icons-material/Person";
+import { Facilityinformation } from "../PersonalInformation/FacilityInformation";
 
 const drawerWidth = 240;
 
@@ -50,9 +52,9 @@ export const DraweComponent = () => {
   const HEADER_CONFIG = getHeaderConfig(user);
   const location = useLocation();
   const navigate = useNavigate();
-  const isAdmin = user.roles && user.roles.includes("Admin");
-  const isTeacher = user.roles && user.roles.includes("Teacher");
-  const isParent = user.roles && user.roles.includes("Parent");
+  const isParent = user.role && user.role == "Parent";
+  const isTeacher = user.role && user.role == "Teacher";
+  const isAdmin = user.role && user.role == "Admin";
   const [selectedItem, setSelectedItem] = useState(
     isAdmin
       ? "Enroll Child"
@@ -64,7 +66,7 @@ export const DraweComponent = () => {
   const [selectedSubmenu, setSelectedSubmenu] = useState("");
 
   const singOut = () => {
-    if (user.roles && user.roles.includes("Teacher")) {
+    if (isTeacher) {
       axios.post(API_URLS.SIGN_OUT, user, HEADER_CONFIG).then(({ data }) => {
         navigate(ROUTE_PATH.HOME_PAGE);
         dispatch(logoutUser());
@@ -107,7 +109,7 @@ export const DraweComponent = () => {
       pathname: ROUTE_PATH.MANAGE_CLASSROOM,
     },
     {
-      text: "Attendance",
+      text: "Staff Attendance",
       Icon: EventNoteIcon,
       Component: StaffAttendance,
       pathname: ROUTE_PATH.ATTENDANCE,
@@ -118,6 +120,7 @@ export const DraweComponent = () => {
       Component: AccountingLedger,
       pathname: ROUTE_PATH.ACCOUNTING_LEDGER,
     },
+
     {
       text: "Reports",
       Icon: LeaderboardIcon,
@@ -131,6 +134,12 @@ export const DraweComponent = () => {
           text: "Ledger Report",
         },
       ],
+    },
+    {
+      text: "Facility Information",
+      Icon: PersonIcon,
+      Component: Facilityinformation,
+      pathname: ROUTE_PATH.PERSONAL_INFORMATION,
     },
   ];
 
@@ -149,7 +158,7 @@ export const DraweComponent = () => {
     },
     {
       text: "Personal Information",
-      Icon: ManageAccountsIcon,
+      Icon: PersonIcon,
       Component: PersonalInformation,
       pathname: ROUTE_PATH.PERSONAL_INFORMATION,
     },
@@ -196,7 +205,13 @@ export const DraweComponent = () => {
         >
           <SchoolIcon sx={{ fontSize: 30, marginRight: "15px" }} />
           <Typography sx={{ fontSize: 24, fontWeight: "bold" }}>
-            Childcare Management
+            Childcare Management (
+            {isAdmin
+              ? "Facility Admin"
+              : isTeacher
+              ? "Staff Login"
+              : "Parent Login"}
+            )
           </Typography>
         </Grid>
       </AppBar>

@@ -28,7 +28,13 @@ import { selectIsAuthenticated, selectUser } from "../../redux/userSlice";
 import { Alert } from "../StudentAttendance/StudentAttendance";
 import { validateEmail } from "../Homepage/CreateAccount";
 
-export const CMDatePicker = ({ label, error, helperText, ...props }) => {
+export const CMDatePicker = ({
+  label,
+  error,
+  helperText,
+  format = "MM-DD-YYYY",
+  ...props
+}) => {
   return (
     <FormControl error={true}>
       <LocalizationProvider dateAdapter={AdapterDayjs}>
@@ -41,7 +47,7 @@ export const CMDatePicker = ({ label, error, helperText, ...props }) => {
           }}
           label={label}
           {...props}
-          format="MM-DD-YYYY"
+          format={format}
         />
         {helperText && <FormHelperText>{helperText}</FormHelperText>}
       </LocalizationProvider>
@@ -352,7 +358,7 @@ export const EnrollChild = () => {
               <TableCell align="center">Age Group</TableCell>
               <TableCell align="center">Allergies</TableCell>
               <TableCell align="center">Parent Names</TableCell>
-              <TableCell align="center">Invite</TableCell>
+              {isWaitlist ? null : <TableCell align="center">Invite</TableCell>}
               <TableCell align="center">PhoneNumber</TableCell>
               <TableCell align="center">Address</TableCell>
             </TableRow>
@@ -389,20 +395,22 @@ export const EnrollChild = () => {
                   <TableCell align="center">
                     {row.ParentFirstName} {row.ParentLastName}
                   </TableCell>
-                  <TableCell align="center">
-                    <Checkbox
-                      checked={row.invite}
-                      size="small"
-                      onClick={() => sendInvite(row.ParentID)}
-                      disabled={row.invite}
-                      sx={{
-                        padding: "0px",
-                        "&.Mui-disabled": {
-                          color: "#4d6b53",
-                        },
-                      }}
-                    />
-                  </TableCell>
+                  {isWaitlist ? null : (
+                    <TableCell align="center">
+                      <Checkbox
+                        checked={row.invite}
+                        size="small"
+                        onClick={() => sendInvite(row.ParentID)}
+                        disabled={row.invite}
+                        sx={{
+                          padding: "0px",
+                          "&.Mui-disabled": {
+                            color: "#4d6b53",
+                          },
+                        }}
+                      />
+                    </TableCell>
+                  )}
                   <TableCell align="center">{row.PhoneNumber}</TableCell>
                   <TableCell align="center">{row.Address}</TableCell>
                 </TableRow>

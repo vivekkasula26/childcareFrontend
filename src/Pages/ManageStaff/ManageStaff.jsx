@@ -13,6 +13,8 @@ import {
   TableHead,
   TableRow,
   Typography,
+  Checkbox,
+  Snackbar,
 } from "@mui/material";
 import { Form, Field } from "react-final-form";
 import { CMTextField } from "../GlobalComponents/CMTextField";
@@ -23,6 +25,7 @@ import { selectIsAuthenticated, selectUser } from "../../redux/userSlice";
 import axios from "axios";
 import { CMDatePicker, formatPhoneNumber } from "../EnrollChild/EnrollChild";
 import { validateEmail } from "../Homepage/CreateAccount";
+import { Alert } from "../StudentAttendance/StudentAttendance";
 
 export const ManageStaff = () => {
   const [hiredStaff, setHiredStaff] = useState([]);
@@ -35,10 +38,19 @@ export const ManageStaff = () => {
   const [isManageStaff, setIsManageStaff] = useState(false);
   const [editedAssigned, setEditedAssigned] = useState([]);
   const [availableSpots, setAvailableSpots] = useState({});
+  const [message, setMessage] = useState("");
   const [refresh, setRefresh] = useState(0);
   const user = useSelector(selectUser);
   const isAuthenticated = useSelector(selectIsAuthenticated);
   const HEADER_CONFIG = getHeaderConfig(user);
+
+  const handleClose = (event, reason) => {
+    if (reason === "clickaway") {
+      return;
+    }
+
+    setMessage("");
+  };
 
   const styles = {
     heading: {
@@ -84,7 +96,7 @@ export const ManageStaff = () => {
     axios.post(API_URLS.HIRE_STAFF, payload, HEADER_CONFIG).then(({ data }) => {
       setIsOpen(false);
       setRefresh(refresh + 1);
-      window.alert(data.message);
+      setMessage(data.message);
     });
   };
 
@@ -132,17 +144,28 @@ export const ManageStaff = () => {
       setIsWithdrawalOpen(false);
       setRefresh(refresh + 1);
       closeDialog();
-      window.alert(data.message);
+      setMessage(data.message);
     });
   };
 
-  const handleAgeGroupChange = (event) => {
-    let val = event.target.value;
-
-    if (availableSpots[val.slice(-1)[0]]) {
-      setEditedAssigned(val);
+  const handleAgeGroupChange = (item, data) => {
+    if (availableSpots[item] || data.includes(item)) {
+      if (data.includes(item)) {
+        if (data.length > 1 || isOpen) {
+          let index = data.indexOf(item);
+          if (index > -1) {
+            data.splice(index, 1);
+            manageStaff(data);
+          }
+        } else {
+          setMessage("Can not leave staff unassigned");
+        }
+      } else {
+        let val = [...data, item];
+        manageStaff(val);
+      }
     } else {
-      window.alert("can not assign");
+      setMessage("Please follow Teacher Assignment rules");
     }
   };
 
@@ -150,24 +173,29 @@ export const ManageStaff = () => {
     setIsManageStaff(false);
     setIsWithdrawalOpen(false);
     setIsClikedSearch(false);
-
+    setEditedAssigned([]);
+    setIsOpen(false);
     setStaffID("");
+    setErrors({});
   };
 
-  const manageStaff = () => {
+  const manageStaff = (val) => {
+    if (isOpen) {
+      setEditedAssigned([...val]);
+      return;
+    }
+
     const payload = {
       id: staffID,
-      assigned: editedAssigned,
+      assigned: val,
     };
 
+    // return;
     axios
       .post(API_URLS.UPDATE_STAFF, payload, HEADER_CONFIG)
       .then(({ data }) => {
-        closeDialog();
-        setStaffID("");
-        window.alert(data.message);
+        setMessage(data.message);
         setRefresh(refresh + 1);
-        setEditedAssigned([]);
       });
   };
 
@@ -180,15 +208,47 @@ export const ManageStaff = () => {
   };
 
   const ClassroomDropdown = ({ assigned = [] }) => {
+    const ass = editedAssigned.length > 0 ? editedAssigned : assigned;
+
+    const classes = [
+      "Infant",
+      "Toddler",
+      "Twaddler",
+      "3 Years Old",
+      "4 Years Old",
+    ];
+
     return (
       <Grid>
-        <Typography>Assigned Classroom: </Typography>
-        <Select
+        <Typography>
+          Assigned Classroom:{isOpen ? "(Optional)" : ""}{" "}
+        </Typography>
+
+        <Grid sx={{ display: "flex", flexWrap: "wrap" }}>
+          {classes.map((item, index) => (
+            <Grid
+              sx={{ display: "flex", flexFlow: "row", alignItems: "center" }}
+            >
+              <Checkbox
+                size={"small"}
+                checked={ass.includes(item)}
+                onClick={() => handleAgeGroupChange(item, ass)}
+              />
+              <Typography>{item}</Typography>
+            </Grid>
+          ))}
+        </Grid>
+        {/* <Select
           labelId="ageGroup-label"
           id="ageGroup"
           multiple
           value={editedAssigned.length > 0 ? editedAssigned : assigned}
-          onChange={handleAgeGroupChange}
+          onChange={(event) =>
+            handleAgeGroupChange(
+              event,
+              editedAssigned.length > 0 ? editedAssigned : assigned
+            )
+          }
           sx={{ width: "200px" }}
           size="small"
           variant="outlined"
@@ -198,9 +258,21 @@ export const ManageStaff = () => {
           <MenuItem value="Twaddler">Twaddler</MenuItem>
           <MenuItem value="3 Years Old">3 Years Old</MenuItem>
           <MenuItem value="4 Years Old">4 Years Old</MenuItem>
-        </Select>
+        </Select> */}
       </Grid>
     );
+  };
+
+  const sendInvite = (id) => {
+    let payload = {
+      id: id,
+    };
+    axios
+      .post(API_URLS.INVITE_STAFF, payload, HEADER_CONFIG)
+      .then(({ data }) => {
+        setRefresh(refresh + 1);
+        setMessage(data.message);
+      });
   };
 
   return (
@@ -252,11 +324,12 @@ export const ManageStaff = () => {
               <TableCell>Staff ID</TableCell>
               <TableCell align="center">Firstname</TableCell>
               <TableCell align="center">Lastname</TableCell>
-              <TableCell align="center">DOB</TableCell>
+              <TableCell align="center">Email</TableCell>
               <TableCell align="center">Address</TableCell>
               <TableCell align="center">PhoneNumber</TableCell>
               <TableCell align="center">HourlySalary</TableCell>
               <TableCell align="center">HireDate</TableCell>
+              <TableCell align="center">Invite</TableCell>
               <TableCell align="center">Assigned Classrooms</TableCell>
             </TableRow>
           </TableHead>
@@ -278,18 +351,32 @@ export const ManageStaff = () => {
                 </TableCell>
                 <TableCell align="center">{row.FirstName}</TableCell>
                 <TableCell align="center">{row.LastName}</TableCell>
-                <TableCell align="center">{row.DOB}</TableCell>
+                <TableCell align="center">{row.email}</TableCell>
                 <TableCell align="center">{row.Address}</TableCell>
                 <TableCell align="center">{row.PhoneNumber}</TableCell>
                 <TableCell align="center">{row.HourlySalary}</TableCell>
                 <TableCell align="center">{row.HireDate}</TableCell>
+                <TableCell align="center">
+                  <Checkbox
+                    checked={row.invite}
+                    size="small"
+                    onClick={() => sendInvite(row.ID)}
+                    disabled={row.invite}
+                    sx={{
+                      padding: "0px",
+                      "&.Mui-disabled": {
+                        color: "#4d6b53",
+                      },
+                    }}
+                  />
+                </TableCell>
                 <TableCell align="center">{row.assigned.join(", ")}</TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </TableContainer>
-      <Dialog open={isOpen} onClose={() => setIsOpen(false)}>
+      <Dialog open={isOpen} onClose={closeDialog}>
         <Grid sx={styles.conatiner}>
           <Form
             style={{ marginBottom: "10px" }}
@@ -409,13 +496,7 @@ export const ManageStaff = () => {
 
       <Dialog
         open={isManageStaff || isWithdrawalOpen}
-        onClose={() => {
-          setIsManageStaff(false);
-          setIsWithdrawalOpen(false);
-          setStaffID("");
-          setIsClikedSearch(false);
-          setEditedAssigned([]);
-        }}
+        onClose={closeDialog}
         fullWidth={true}
         maxWidth={"sm"}
       >
@@ -456,26 +537,33 @@ export const ManageStaff = () => {
               onChange={(event) => setStaffID(event.target.value)}
             />
           )}
-          {isClikedSearch ? (
+          {isClikedSearch && isWithdrawalOpen ? (
             <Typography sx={{ marginY: "10px" }}>
               Check the details and confirm
             </Typography>
           ) : null}
-          <Button
-            variant="contained"
-            sx={{ mt: "20px" }}
-            onClick={() =>
-              isClikedSearch
-                ? isManageStaff
-                  ? manageStaff()
-                  : withdrawStaff()
-                : setIsClikedSearch(true)
-            }
-          >
-            {isClikedSearch ? "Submit" : "Search"}
-          </Button>
+          {isClikedSearch && isManageStaff ? null : (
+            <Button
+              variant="contained"
+              sx={{ mt: "20px" }}
+              onClick={() =>
+                isClikedSearch
+                  ? isManageStaff
+                    ? manageStaff()
+                    : withdrawStaff()
+                  : setIsClikedSearch(true)
+              }
+            >
+              {isClikedSearch ? "Submit" : "Search"}
+            </Button>
+          )}
         </Grid>
       </Dialog>
+      <Snackbar open={message} autoHideDuration={3000} onClose={handleClose}>
+        <Alert onClose={handleClose} sx={{ width: "100%" }} severity="info">
+          {message}
+        </Alert>
+      </Snackbar>
     </Grid>
   );
 };

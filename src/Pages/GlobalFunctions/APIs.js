@@ -26,4 +26,9 @@ export const API_URLS = {
   GET_CHILD_ATTENDANCE: baseURL + "/get_child_attendance",
   GET_LEDGER_REPORT: baseURL + "/get_ledger_report",
   INVITE_PARENT: baseURL + "/invite_parent",
+  MAKE_PAYMENT: baseURL + "/make_payment",
+  INVITE_STAFF: baseURL + "/invite_staff",
+  CREATE_FACILITY_ACCOUNT: baseURL + "/create_facility_account",
+  GET_FACILITY_INFORMATION: baseURL + "/get_facility_information",
+  UPDATE_CHILD_DETAILS: baseURL + "/update_child_information",
 };

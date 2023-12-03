@@ -5,7 +5,6 @@ import { API_URLS } from "../GlobalFunctions/APIs";
 import { getHeaderConfig } from "../GlobalFunctions/API_header_config";
 import { useSelector } from "react-redux";
 import { selectIsAuthenticated, selectUser } from "../../redux/userSlice";
-import { CMTextField } from "../GlobalComponents/CMTextField";
 
 export const ManageClassroom = () => {
   const [isDisabled, setIsDisabled] = useState(true);
@@ -31,6 +30,7 @@ export const ManageClassroom = () => {
       borderColor: "#e6e6e6",
       padding: "10px",
       width: "100px",
+      textAlign: "center",
     },
     tableRow: {
       flexFlow: "row",
@@ -57,13 +57,7 @@ export const ManageClassroom = () => {
           Manage Class Enrollments
         </Typography>
       </Grid>
-      {/* <Button
-        variant="outlined"
-        style={{ marginTop: 20, marginBottom: 20 }}
-        onClick={() => setIsDisabled(!isDisabled)}
-      >
-        {!isDisabled ? "cancel" : "edit"}
-      </Button> */}
+
       {data.length ? (
         <>
           <Grid sx={styles.tableRow} style={{ backgroundColor: "#e1e2e48f" }}>
@@ -71,6 +65,7 @@ export const ManageClassroom = () => {
             <Typography sx={styles.tableCell}>Classname</Typography>
             <Typography sx={styles.tableCell}>Capacity</Typography>
             <Typography sx={styles.tableCell}>Fees</Typography>
+            <Typography sx={styles.tableCell}>Occupied</Typography>
           </Grid>
           {data.map((item, index) => (
             <Grid sx={styles.tableRow} style={{ backgroundColor: "#fafafd" }}>
@@ -78,23 +73,7 @@ export const ManageClassroom = () => {
               <Typography sx={styles.tableCell}>{item.ClassName}</Typography>
               <Typography sx={styles.tableCell}>{item.Capacity}</Typography>
               <Typography sx={styles.tableCell}>{item.fees}$/week</Typography>
-              {/* <CMTextField
-                value={item.Capacity}
-                variant="standard"
-                fullWidth={false}
-                style={{ width: "121px" }}
-                disabled={isDisabled}
-                onChange={(event) => {
-                  let new_data = {};
-                  let n_d = data;
-                  let val = event.target.value;
-                  n_d[index]["Capacity"] = val;
-                  new_data["id"] = val;
-                  new_data["capacity"] = val;
-                  setNewValues(data);
-                  setData([...n_d]);
-                }}
-              /> */}
+              <Typography sx={styles.tableCell}>{item.Occupied}</Typography>
             </Grid>
           ))}
         </>

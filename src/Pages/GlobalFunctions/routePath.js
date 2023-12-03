@@ -18,4 +18,5 @@ export const ROUTE_PATH = {
   PERSONAL_INFORMATION: "/dashboard/personal_information",
   ATTENDANCE_ACCOUNTING: "/dashboard/attendance_accounting",
   CHILD_ATTENDANCE: "/dashboard/child_attendance",
+  FACILITY_INFORMATION: "/dashboard/facility_information",
 };

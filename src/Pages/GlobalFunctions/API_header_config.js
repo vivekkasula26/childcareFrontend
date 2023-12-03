@@ -4,7 +4,7 @@ export const getHeaderConfig = (user = {}) => {
     "Access-Control-Allow-Methods": "GET,PUT,POST,DELETE,PATCH,OPTIONS",
   };
   if (user && user.email) {
-    (header["email"] = user.email), (header["role"] = user.roles[0]);
+    (header["email"] = user.email), (header["role"] = user.role);
   }
 
   let head = { headers: header };

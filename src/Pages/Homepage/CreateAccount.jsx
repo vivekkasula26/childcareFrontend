@@ -38,19 +38,8 @@ export const CreateAccount = () => {
     if (!values.userName) {
       errors.userName = "Required";
     }
-    if (!values.FirstName) {
-      errors.FirstName = "Required";
-    }
-    if (!values.LastName) {
-      errors.LastName = "Required";
-    }
     if (!values.password) {
       errors.password = "Required";
-    }
-    if (!values.PhoneNumber) {
-      errors.PhoneNumber = "Required";
-    } else if (!/^\d{10}$/.test(values.PhoneNumber)) {
-      errors.PhoneNumber = "Invalid phone number (10 digits)";
     }
     if (!values.email) {
       errors.email = "Required";
@@ -79,11 +68,8 @@ export const CreateAccount = () => {
   const onSubmit = (values) => {
     const payload = {
       userName: values.userName,
-      FirstName: values.FirstName,
-      LastName: values.LastName,
       password: values.password,
       email: values.email,
-      PhoneNumber: values.PhoneNumber,
       roles: selectedUser,
     };
 
@@ -134,25 +120,13 @@ export const CreateAccount = () => {
                 >
                   <Typography sx={styles.heading}>Create Account</Typography>
                   <Field
-                    name="FirstName"
+                    name="email"
                     render={({ input }) => (
                       <CMTextField
                         {...input}
-                        label="First Name"
-                        error={errors.FirstName}
-                        helperText={errors.FirstName}
-                        sx={{ marginBottom: "15px" }}
-                      />
-                    )}
-                  />
-                  <Field
-                    name="LastName"
-                    render={({ input }) => (
-                      <CMTextField
-                        {...input}
-                        label="Last Name"
-                        error={errors.LastName}
-                        helperText={errors.LastName}
+                        label="Email"
+                        error={errors.email}
+                        helperText={errors.email}
                         sx={{ marginBottom: "15px" }}
                       />
                     )}
@@ -169,18 +143,7 @@ export const CreateAccount = () => {
                       />
                     )}
                   />
-                  <Field
-                    name="email"
-                    render={({ input }) => (
-                      <CMTextField
-                        {...input}
-                        label="Email"
-                        error={errors.email}
-                        helperText={errors.email}
-                        sx={{ marginBottom: "15px" }}
-                      />
-                    )}
-                  />
+
                   <Field
                     name="password"
                     render={({ input }) => (
@@ -193,22 +156,6 @@ export const CreateAccount = () => {
                         type="password"
                       />
                     )}
-                  />
-
-                  <Field
-                    name="PhoneNumber"
-                    render={({ input }) => (
-                      <CMTextField
-                        {...input}
-                        label="Phone Number"
-                        type="tel"
-                        error={errors.PhoneNumber}
-                        helperText={errors.PhoneNumber}
-                        sx={{ marginBottom: "15px" }}
-                      />
-                    )}
-                    format={formatPhoneNumber}
-                    parse={(value) => value.replace(/[^\d]/g, "").slice(0, 10)}
                   />
 
                   <Field

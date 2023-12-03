@@ -13,8 +13,7 @@ export const PersonalInformation = () => {
   const [data, setData] = useState({});
 
   useEffect(() => {
-    let api = isParent;
-    API_URLS.GET_STAFF_PERSONAL_INFORMATION + `/${user.email}`;
+    let api = API_URLS.GET_STAFF_PERSONAL_INFORMATION + `/${user.email}`;
 
     axios.get(api, HEADER_CONFIG).then(({ data }) => {
       console.log(data);

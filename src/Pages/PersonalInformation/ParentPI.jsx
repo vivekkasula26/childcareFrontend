@@ -1,4 +1,4 @@
-import { Grid, Paper, Typography } from "@mui/material";
+import { Button, Grid, Snackbar, Typography } from "@mui/material";
 import axios from "axios";
 import React, { useEffect, useState } from "react";
 import { API_URLS } from "../GlobalFunctions/APIs";
@@ -10,6 +10,9 @@ import {
 } from "../../redux/userSlice";
 import { getHeaderConfig } from "../GlobalFunctions/API_header_config";
 import { CMTextField } from "../GlobalComponents/CMTextField";
+import { Field, Form } from "react-final-form";
+import { formatPhoneNumber } from "../EnrollChild/EnrollChild";
+import { Alert } from "../StudentAttendance/StudentAttendance";
 
 export const ParentPI = () => {
   const user = useSelector(selectUser);
@@ -17,6 +20,18 @@ export const ParentPI = () => {
   const HEADER_CONFIG = getHeaderConfig(user);
   const [data, setData] = useState({});
   const dispatch = useDispatch();
+  const [disabled, setDisabled] = useState(true);
+  const [errors, setErrors] = useState({});
+  const [refresh, setRefresh] = useState(0);
+  const [message, setMessage] = useState("");
+
+  const handleClose = (event, reason) => {
+    if (reason === "clickaway") {
+      return;
+    }
+
+    setMessage("");
+  };
 
   useEffect(() => {
     let api = API_URLS.GET_ENROLLED_CHILDREN + `?email=${user.email}`;
@@ -25,77 +40,239 @@ export const ParentPI = () => {
       dispatch(loginUser({ ...user, ...data }));
       setData(data);
     });
-  }, []);
+  }, [refresh]);
 
-  const PI = ({ value, name, disabled, ...props }) => {
-    return (
-      <Grid md={4} item style={{ padding: "10px" }}>
-        <CMTextField
-          label={name}
-          defaultValue={value}
-          variant="standard"
-          InputProps={{
-            readOnly: disabled,
-          }}
-          {...props}
-        />
-      </Grid>
-    );
+  const validate = (values) => {
+    const errors = {};
+    if (!values) {
+      return errors;
+    }
+    if (!values.ParentFirstName) {
+      errors.ParentFirstName = "Required";
+    }
+    if (!values.ParentLastName) {
+      errors.ParentLastName = "Required";
+    }
+
+    if (!values.ChildFirstName) {
+      errors.consentForm = "Required";
+    }
+    if (!values.ChildLastName) {
+      errors.dob = "Required";
+    }
+
+    if (!values.ParentFirstName) {
+      errors.ParentFirstName = "Required";
+    }
+    if (!values.ParentLastName) {
+      errors.ParentLastName = "Required";
+    }
+    if (!values.PhoneNumber) {
+      errors.PhoneNumber = "Required";
+    } else if (!/^\d{10}$/.test(values.PhoneNumber)) {
+      errors.PhoneNumber = "Invalid phone number (10 digits)";
+    }
+    if (!values.Address) {
+      errors.Address = "Required";
+    }
+
+    setErrors(errors);
+  };
+
+  const onSubmit = (values) => {
+    axios
+      .post(API_URLS.UPDATE_CHILD_DETAILS, values, HEADER_CONFIG)
+      .then(({ data }) => {
+        setMessage(data.message);
+        setDisabled(true);
+      });
   };
 
   return (
-    <Grid>
+    <Grid
+      sx={{
+        "& .MuiFormControl-root": {
+          marginBottom: "10px",
+        },
+      }}
+    >
       <Typography style={{ fontSize: 28, fontWeight: "bold" }}>
         Personal Information
       </Typography>
-      <Paper elevation={4} style={{ marginTop: "20px", paddingTop: "15px" }}>
-        <Typography
-          style={{ fontSize: 20, fontWeight: "bold", padding: "10px" }}
-        >
-          Child Information
-        </Typography>
-        <Grid
-          container
-          display={"flex"}
-          flexDirection={"row"}
-          md={12}
-          sx={{ pb: "15px" }}
-        >
-          <PI name={"ID"} value={data.ChildID} disabled={true} />
-          <PI
-            name={"Enrollment Date"}
-            value={data.enrollmentDate}
-            disabled={true}
-          />
-          <PI
-            name={"Date Of Birth"}
-            value={data.ChildDateOfBirth}
-            disabled={true}
-          />
-          <PI name={"Firstname"} value={data.ChildFirstName} />
-          <PI name={"Lastname"} value={data.ChildLastName} />
-          <PI name={"AgeGroup"} value={data.AgeGroup} disabled={true} />
-          <PI name={"Allergies"} value={data.Allergies} />
-        </Grid>
-        <Typography
-          style={{ fontSize: 20, fontWeight: "bold", padding: "10px" }}
-        >
-          Parent Information
-        </Typography>
-        <Grid
-          container
-          display={"flex"}
-          flexDirection={"row"}
-          md={12}
-          sx={{ pb: "15px" }}
-        >
-          <PI name={"Firstname"} value={data.ParentFirstName} />
-          <PI name={"Lastname"} value={data.ParentLastName} />
-          <PI name={"email"} value={user.email} />
-          <PI name={"Phonenumber"} value={data.PhoneNumber} />
-          <PI name={"Address"} value={data.Address} />
-        </Grid>
-      </Paper>
+
+      <Form
+        style={{ marginBottom: "10px" }}
+        onSubmit={onSubmit}
+        initialValues={data}
+        render={({ handleSubmit, form, values, initialValues }) => (
+          <form
+            onSubmit={handleSubmit}
+            onChange={(value) => {
+              for (const key in errors) {
+                errors[key] = "";
+              }
+            }}
+          >
+            <div>
+              <Typography
+                sx={{
+                  fontWeight: "bold",
+                  fontSize: "18px",
+                  marginBottom: "10px",
+                }}
+              >
+                Child Details
+              </Typography>
+              <Field
+                name="ChildFirstName"
+                render={({ input }) => (
+                  <CMTextField
+                    {...input}
+                    label="First Name"
+                    error={errors.FirstName}
+                    helperText={errors.FirstName}
+                    disabled={disabled}
+                  />
+                )}
+              />
+              <Field
+                name="ChildLastName"
+                render={({ input }) => (
+                  <CMTextField
+                    {...input}
+                    label="Lastname"
+                    error={errors.LastName}
+                    helperText={errors.LastName}
+                    disabled={disabled}
+                  />
+                )}
+              />
+              <Field
+                name="Allergies"
+                render={({ input }) => (
+                  <CMTextField
+                    {...input}
+                    label="Allergies"
+                    error={errors.Allergies}
+                    helperText={errors.Allergies}
+                    disabled={disabled}
+                  />
+                )}
+              />
+              <Field
+                name="ChildDateOfBirth"
+                render={({ input }) => (
+                  <CMTextField
+                    label={"Date of Birth"}
+                    disabled={true}
+                    {...input}
+                  />
+                )}
+              />
+            </div>
+            <div>
+              <Typography
+                sx={{
+                  fontWeight: "bold",
+                  fontSize: "18px",
+                  marginBottom: "10px",
+                }}
+              >
+                Parent Details
+              </Typography>
+              <Field
+                name="ParentFirstName"
+                render={({ input }) => (
+                  <CMTextField
+                    {...input}
+                    label="First Name"
+                    error={errors.ParentFirstName}
+                    helperText={errors.ParentFirstName}
+                    disabled={disabled}
+                  />
+                )}
+              />
+              <Field
+                name="ParentLastName"
+                render={({ input }) => (
+                  <CMTextField
+                    {...input}
+                    label="Last Name"
+                    error={errors.ParentLastName}
+                    disabled={disabled}
+                    helperText={errors.ParentLastName}
+                  />
+                )}
+              />
+              <Field
+                name="email"
+                render={({ input }) => (
+                  <CMTextField
+                    {...input}
+                    label="Email"
+                    value={user.email}
+                    sx={{ marginBottom: "15px" }}
+                    disabled={true}
+                  />
+                )}
+              />
+              <Field
+                name="PhoneNumber"
+                render={({ input }) => (
+                  <CMTextField
+                    {...input}
+                    label="Phone Number"
+                    type="tel"
+                    error={errors.PhoneNumber}
+                    helperText={errors.PhoneNumber}
+                    disabled={disabled}
+                  />
+                )}
+                // format={formatPhoneNumber}
+                parse={(value) => value.replace(/[^\d]/g, "").slice(0, 10)}
+              />
+              <Field
+                name="Address"
+                render={({ input }) => (
+                  <CMTextField
+                    {...input}
+                    label="Address"
+                    error={errors.Address}
+                    helperText={errors.Address}
+                    disabled={disabled}
+                  />
+                )}
+              />
+            </div>
+            <Button
+              variant="outlined"
+              style={{ marginTop: 20, width: "20%", marginRight: "20px" }}
+              onClick={() => {
+                setDisabled(!disabled);
+              }}
+            >
+              {disabled ? "Edit" : "cancel"}
+            </Button>
+            {!disabled ? (
+              <Button
+                variant="contained"
+                style={{ marginTop: 20, width: "20%" }}
+                onClick={() => {
+                  validate(values);
+                  handleSubmit();
+                }}
+              >
+                Submit
+              </Button>
+            ) : null}
+          </form>
+        )}
+      />
+      <Snackbar open={message} autoHideDuration={3000} onClose={handleClose}>
+        <Alert onClose={handleClose} severity="success" sx={{ width: "100%" }}>
+          {message}
+        </Alert>
+      </Snackbar>
     </Grid>
   );
 };
