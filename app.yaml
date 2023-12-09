@@ -1,0 +1,16 @@
+runtime: nodejs14 # or whatever your current Node.js version is
+
+handlers:
+  - url: /.*
+    static_files: dist/index.html
+    upload: dist/index.html
+
+  - url: /(.*\.(gif|png|jpg|css|js|svg|json|ico))
+    static_files: dist/\1
+    upload: dist/(.*\.(gif|png|jpg|css|js|svg|json|ico))
+
+automatic_scaling:
+  min_idle_instances: automatic # default is automatic
+  max_idle_instances: automatic # default is automatic
+  min_pending_latency: automatic # default is automatic
+  max_pending_latency: automatic # default is automatic
