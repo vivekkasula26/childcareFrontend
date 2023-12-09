@@ -1,4 +1,4 @@
-const baseURL = "https://34.171.50.246:443";
+const baseURL = "https://34.171.50.246";
 
 export const API_URLS = {
   ON_LOGIN: baseURL + "/check_login",
