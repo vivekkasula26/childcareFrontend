@@ -1,7 +1,7 @@
 runtime: nodejs20
 
 handlers:
-  - url: /(.*\.(js|json|ico|txt))
+ - url: /(.*\.(js|json|ico|txt))
     mime_type: application/javascript
     static_files: dist/\1
     upload: dist/(.*\.(js|json|ico|txt))
