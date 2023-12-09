@@ -46,7 +46,9 @@ export const StaffAttendance = () => {
           HEADER_CONFIG
         )
         .then(({ data }) => {
-          setStaffAttendance(data.data);
+          if (typeof data.data != "undefined") {
+            setStaffAttendance(data.data);
+          }
         });
     }
   }, []);
